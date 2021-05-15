@@ -30,26 +30,16 @@ export default class TechnologyService {
 
   static update = async (updateTechnology: IUpdateTechnology): Promise<Technology | null> => {
     const { id, name, description } = updateTechnology
-    let technology = await Technology.findOne({ id })
-
-    if (!technology) {
-      throw new NotFoundError(`Technology with id ${id} could not be found`)
-    }
+    let technology = await TechnologyService.loadById(id)
 
     technology = new Technology({ ...technology, name, description })
-
     technology.save()
 
     return technology
   }
 
   static remove = async (id: number): Promise<Boolean> => {
-    let technology = await Technology.findOne({ id })
-
-    if (!technology) {
-      throw new NotFoundError(`Technology with id ${id} could not be found`)
-    }
-
+    await TechnologyService.loadById(id)
     await Technology.delete(id)
 
     return true
