@@ -3,6 +3,13 @@ import { getRepository } from 'typeorm'
 
 import User from '../../../entities/User'
 
+/**
+ * Middleware utility that thakes an array of roles and based on user session
+ * check if contains the provided options
+ *
+ * @param roles
+ * @returns
+ */
 export const checkRole = (roles: Array<string>) => {
   return async (_request: Request, response: Response, next: NextFunction) => {
     const id = response.locals.jwtPayload.userId

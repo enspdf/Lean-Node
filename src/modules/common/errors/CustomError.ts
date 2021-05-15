@@ -1,3 +1,6 @@
+/**
+ * Custom error class used to throw customized errors
+ */
 export class CustomError extends Error {
   constructor(message: string = '') {
     super()

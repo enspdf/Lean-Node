@@ -6,6 +6,14 @@ export enum StaffMailType {
   DECLINED = 2
 }
 
+/**
+ * Utiltiy used to handle the email notifications based on the staff status
+ * and application status changes
+ *
+ * @param staff
+ * @param type
+ * @returns
+ */
 export const buildMailContent = (staff: Staff, type: StaffMailType) => {
   let content: string = ''
 

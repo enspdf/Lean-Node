@@ -6,6 +6,10 @@ interface EmailParameters {
   content: string
 }
 
+/**
+ * Utility method used to get an email, subject and content required to send
+ * an email to the specified address.
+ */
 export const sendEmail = async ({
   email = 'admin@recruiters.com',
   subject,
