@@ -7,6 +7,7 @@ import { BadRequestError, NotFoundError, UnauthorizedError } from '../common/err
 import { IAuthenticationResponse } from './interfaces/IAuthenticationResponse'
 import { ILogin } from './interfaces/ILogin'
 import { IRegister } from './interfaces/IRegister'
+import { sendEmail } from '../../utils/sendEmail'
 
 export default class AuthenticationService {
   static register = async (userInformation: IRegister): Promise<IAuthenticationResponse> => {
@@ -65,5 +66,11 @@ export default class AuthenticationService {
     user.password = hashedPassword
 
     await user.save()
+
+    await sendEmail({
+      email: user.email,
+      subject: 'New Password Request',
+      content: `The new password for your account was changed to ${newPassword}`
+    })
   }
 }
