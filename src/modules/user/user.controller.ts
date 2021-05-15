@@ -20,19 +20,26 @@ const update = async (request: Request, response: Response): Promise<Response> =
   const id: number = (request.params.id || 0) as number
   const { name, email } = request.body
 
-  const updateUser: IUpdateUser = { id, name, email }
+  try {
+    const updateUser: IUpdateUser = { id, name, email }
+    const user = await UserService.update(updateUser, isAdminRequest(response))
 
-  const user = await UserService.update(updateUser, isAdminRequest(response))
-
-  return response.status(200).json(user)
+    return response.status(200).json(user)
+  } catch (error) {
+    return response.status(500).json(error)
+  }
 }
 
 const remove = async (request: Request, response: Response): Promise<Response> => {
   const id: number = (request.params.id || 0) as number
 
-  await UserService.remove(id, isAdminRequest(response))
+  try {
+    await UserService.remove(id, isAdminRequest(response))
 
-  return response.status(204).send()
+    return response.status(204).send()
+  } catch (error) {
+    return response.status(500).json(error)
+  }
 }
 
 export { loadById, update, remove }
