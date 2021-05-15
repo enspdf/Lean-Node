@@ -1,4 +1,4 @@
-import { getRepository } from 'typeorm'
+import { getRepository, Repository } from 'typeorm'
 import Staff, { RecruitingProcess, RecruitingStatus } from '../../entities/Staff'
 import StaffTechnologies from '../../entities/StaffTechnologies'
 import Technology from '../../entities/Technology'
@@ -117,57 +117,22 @@ export default class StaffService {
    */
   static changeStatus = async (id: number, hiringStatus: number): Promise<Boolean> => {
     // 1. we need to be sure that the if of the staff to change exists in the system before proceed with the update process.
-    const staff = await Staff.findOne({ id })
-
-    if (!staff) {
-      throw new NotFoundError(`Staff with id ${id} could not be found`)
-    }
+    const staff = await StaffService.loadById(id)
 
     const staffRepository = getRepository(Staff)
 
     // 2.1 If the recruiting sttus is HIRED then the staff flags updates to be identified as hired.
     if (RecruitingStatus.HIRED === hiringStatus) {
-      await staffRepository
-        .createQueryBuilder()
-        .update()
-        .set({
-          recruitingProcess: RecruitingProcess.COMPLETED,
-          recruitingStatus: RecruitingStatus.HIRED,
-          status: true,
-          approvalDate: new Date()
-        })
-        .where('id = :id', { id })
-        .execute()
-
-      // 2.1.1 Once the staff information is updated, the system sends an email with the application
-      // status updates with a basic welcome email
-      await sendEmail({
-        email: staff.email,
-        subject: 'Application Status',
-        content: buildMailContent(staff, StaffMailType.HIRED)
-      })
+      await StaffService.processHiredStaff(staff!, staffRepository)
     }
     // 2.2 If the recruiting sttus is DECLINED then the staff flags updates to be identified as declined and the process could'n be continued.
     else if (RecruitingStatus.DECLINED === hiringStatus) {
-      await staffRepository
-        .createQueryBuilder()
-        .update()
-        .set({
-          recruitingProcess: RecruitingProcess.COMPLETED,
-          recruitingStatus: RecruitingStatus.DECLINED,
-          status: false,
-          declineDate: new Date()
-        })
-        .where('id = :id', { id })
-        .execute()
-
-      // 2.2.1 Once the staff information is updated, the system sends an email with the application
-      // status with the try again information including that the process cann't continue
-      await sendEmail({
-        email: staff.email,
-        subject: 'Application Status',
-        content: buildMailContent(staff, StaffMailType.DECLINED)
-      })
+      await StaffService.processDeclinedStaff(staff!, staffRepository)
+    }
+    // 2.3 If the recruiting sttus is HOLD then the staff flags updates to be identified as declined and the process could'n be continued.
+    // but the application still pending to next processes
+    else if (RecruitingStatus.HOLD === hiringStatus) {
+      await StaffService.processHoldStaff(staff!, staffRepository)
     }
 
     return true
@@ -180,14 +145,84 @@ export default class StaffService {
    * @returns
    */
   static remove = async (id: number): Promise<Boolean> => {
-    const staff = await Staff.findOne({ id })
-
-    if (!staff) {
-      throw new NotFoundError(`Staff with id ${id} could not be found`)
-    }
-
+    await StaffService.loadById(id)
     await Staff.delete(id)
 
     return true
+  }
+
+  static processHiredStaff = async (
+    staff: Staff,
+    staffRepository: Repository<Staff>
+  ): Promise<void> => {
+    await staffRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        recruitingProcess: RecruitingProcess.COMPLETED,
+        recruitingStatus: RecruitingStatus.HIRED,
+        status: true,
+        approvalDate: new Date()
+      })
+      .where('id = :id', { id: staff.id })
+      .execute()
+
+    // Once the staff information is updated, the system sends an email with the application status updates with a basic welcome email
+    await StaffService.processStaffEmail(staff, StaffMailType.HIRED)
+  }
+
+  static processDeclinedStaff = async (
+    staff: Staff,
+    staffRepository: Repository<Staff>
+  ): Promise<void> => {
+    await staffRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        recruitingProcess: RecruitingProcess.COMPLETED,
+        recruitingStatus: RecruitingStatus.DECLINED,
+        status: false,
+        declineDate: new Date()
+      })
+      .where('id = :id', { id: staff.id })
+      .execute()
+
+    // Once the staff information is updated, the system sends an email with the application status with the try again information including that the process cann't continue
+    await StaffService.processStaffEmail(staff, StaffMailType.DECLINED)
+  }
+
+  static processHoldStaff = async (
+    staff: Staff,
+    staffRepository: Repository<Staff>
+  ): Promise<void> => {
+    await staffRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        recruitingProcess: RecruitingProcess.COMPLETED,
+        recruitingStatus: RecruitingStatus.HOLD,
+        status: false,
+        holdDate: new Date()
+      })
+      .where('id = :id', { id: staff.id })
+      .execute()
+
+    // Once the staff information is updated, the system sends an email with the application
+    // status with the aplication information status and the holding position
+    await StaffService.processStaffEmail(staff, StaffMailType.HOLD)
+  }
+
+  /**
+   * Method used to centralize the staff email notifications
+   *
+   * @param staff
+   * @param emailType
+   */
+  static processStaffEmail = async (staff: Staff, emailType: StaffMailType): Promise<void> => {
+    await sendEmail({
+      email: staff.email,
+      subject: 'Application Status',
+      content: buildMailContent(staff, emailType)
+    })
   }
 }

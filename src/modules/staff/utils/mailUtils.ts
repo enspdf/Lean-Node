@@ -3,7 +3,8 @@ import Staff from '../../../entities/Staff'
 export enum StaffMailType {
   NEW_STAFF = 0,
   HIRED = 1,
-  DECLINED = 2
+  DECLINED = 2,
+  HOLD = 3
 }
 
 /**
@@ -47,6 +48,16 @@ export const buildMailContent = (staff: Staff, type: StaffMailType) => {
         Try again next time.
       `
 
+      break
+    case StaffMailType.HOLD:
+      content = `
+        Dear ${staff.name}
+
+        I would like to take the opportunity to thank you for your application.
+        I want to inform you that you have been hired for the position.
+
+        We are considering your application for future vacancies.
+      `
       break
   }
 

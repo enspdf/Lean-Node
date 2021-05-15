@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer'
 import { Column, Entity as TOEntity, OneToMany } from 'typeorm'
 import Entity from './Entity'
 
@@ -6,7 +7,8 @@ import StaffTechnologies from './StaffTechnologies'
 export enum RecruitingStatus {
   PENDING = 0,
   HIRED = 1,
-  DECLINED = 2
+  DECLINED = 2,
+  HOLD = 3
 }
 
 export enum RecruitingProcess {
@@ -40,11 +42,17 @@ export default class Staff extends Entity {
   @Column({ default: true, nullable: true })
   status: Boolean
 
+  @Exclude()
   @Column({ default: null, nullable: true, type: Date })
   approvalDate: Date
 
+  @Exclude()
   @Column({ default: null, nullable: true, type: Date })
   declineDate: Date
+
+  @Exclude()
+  @Column({ default: null, nullable: true, type: Date })
+  holdDate: Date
 
   @OneToMany(() => StaffTechnologies, (staffTechnology) => staffTechnology.staff)
   staffTechnologies: StaffTechnologies[]
